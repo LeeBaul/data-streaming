@@ -158,11 +158,13 @@ public class TestResultService {
             LogUtil.info("等待其他节点结束: " + report.getTestId());
             return;
         }
-        // 更新测试的状态
-        LoadTestWithBLOBs loadTest = new LoadTestWithBLOBs();
-        loadTest.setId(report.getTestId());
-        loadTest.setStatus(TestStatus.Completed.name());
-        loadTestMapper.updateByPrimaryKeySelective(loadTest);
+        // 更新测试的状态, 已经发生错误不再更新
+        if (!TestStatus.Error.name().equals(report.getStatus())) {
+            LoadTestWithBLOBs loadTest = new LoadTestWithBLOBs();
+            loadTest.setId(report.getTestId());
+            loadTest.setStatus(TestStatus.Completed.name());
+            loadTestMapper.updateByPrimaryKeySelective(loadTest);
+        }
         LogUtil.info("测试[{}]结束, reportId: {}", report.getTestId(), report.getId());
         completeThreadPool.submit(() -> generateReportComplete(report.getId()));
     }
@@ -260,6 +262,10 @@ public class TestResultService {
         LoadTestReport loadTestReportNow = loadTestReportMapper.selectByPrimaryKey(reportId);
         // 如果当前状态已经是completed，就不再操作，否则因为因为并发问题导致报告的状态又变回reporting，同时也导致下面的while会陷入死循环
         if (loadTestReportNow.getStatus().equals(TestStatus.Completed.name())) {
+            return;
+        }
+        // 发生错误不再修改状态
+        if (loadTestReportNow.getStatus().equals(TestStatus.Error.name())) {
             return;
         }
 
