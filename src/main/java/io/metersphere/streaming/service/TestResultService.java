@@ -103,8 +103,12 @@ public class TestResultService {
         content.append(metric.getResponseTime()).append(",");
         content.append(warp(metric.getSampleLabel())).append(",");
         content.append(metric.getResponseCode()).append(",");
-        // response message
-        content.append(warp(metric.getResponseMessage())).append(",");
+        // response message 会影响事务控制器的结果
+        if (metric.getSuccess()) {
+            content.append("OK").append(",");
+        } else {
+            content.append(",");
+        }
         content.append(warp(metric.getThreadName())).append(",");
         content.append(metric.getDataType()).append(",");
         content.append(metric.getSuccess()).append(",");
