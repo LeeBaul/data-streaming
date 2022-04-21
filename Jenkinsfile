@@ -16,9 +16,9 @@ pipeline {
                     sh '''
                         export JAVA_HOME=/opt/jdk-11
                         export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH
-                        export PATH=$JAVA_HOME/bin:$PATH
+                        export PATH=$JAVA_HOME/bin:/opt/mvnd/bin:$PATH
                         java -version
-                        mvn clean package --settings ./settings.xml
+                        mvnd clean package --settings ./settings.xml
                         mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
                     '''
                 }
