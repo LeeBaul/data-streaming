@@ -2,7 +2,7 @@ package io.metersphere.streaming.report;
 
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.impl.AbstractReport;
-import org.reflections8.Reflections;
+import org.reflections.Reflections;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ public class ReportGeneratorFactory {
         List<AbstractReport> reportGenerators = new ArrayList<>();
         subTypes.forEach(s -> {
             try {
-                reportGenerators.add(s.newInstance());
+                reportGenerators.add(s.getDeclaredConstructor().newInstance());
             } catch (Exception e) {
                 LogUtil.error(e);
             }
