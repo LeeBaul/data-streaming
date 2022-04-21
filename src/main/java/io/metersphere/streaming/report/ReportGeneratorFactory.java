@@ -10,25 +10,28 @@ import java.util.List;
 import java.util.Set;
 
 public class ReportGeneratorFactory {
-    private static List<AbstractReport> reportGenerators = new ArrayList<>();
+    private static Set<Class<? extends AbstractReport>> subTypes;
 
-    public synchronized static List<AbstractReport> getReportGenerators() {
-        if (CollectionUtils.isNotEmpty(reportGenerators)) {
-            return reportGenerators;
+    private synchronized static Set<Class<? extends AbstractReport>> getSubTypes() {
+        if (CollectionUtils.isNotEmpty(subTypes)) {
+            return subTypes;
         }
-
         Reflections reflections = new Reflections(ReportGeneratorFactory.class);
-        Set<Class<? extends AbstractReport>> subTypes = reflections.getSubTypesOf(AbstractReport.class);
+        subTypes = reflections.getSubTypesOf(AbstractReport.class);
+        return subTypes;
+    }
+
+    public static List<AbstractReport> getReportGenerators() {
+
         List<AbstractReport> result = new ArrayList<>();
-        subTypes.forEach(s -> {
+        getSubTypes().forEach(s -> {
             try {
                 result.add(s.getDeclaredConstructor().newInstance());
             } catch (Exception e) {
                 LogUtil.error(e);
             }
         });
-        reportGenerators = result;
-        return reportGenerators;
+        return result;
     }
 }
 
