@@ -400,6 +400,7 @@ public class TestResultService {
         loadTestMapper.updateByPrimaryKeySelective(loadTest);
         // 发送报错消息到 kafka, 数据库状态如果是error说明已经送过通知了， 通知只发一次
         if (!StringUtils.equals(TestStatus.Error.name(), testReportFromDB.getStatus())) {
+            testReportFromDB = loadTestReportMapper.selectByPrimaryKey(reportId);
             loadTestProducer.sendMessage(testReportFromDB);
         }
     }
