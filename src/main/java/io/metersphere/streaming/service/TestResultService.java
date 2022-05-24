@@ -383,6 +383,8 @@ public class TestResultService {
 
 
     public void saveErrorMessage(String reportId, String message) {
+        LoadTestReport testReportFromDB = loadTestReportMapper.selectByPrimaryKey(reportId);
+
         LoadTestReportWithBLOBs loadTestReport = new LoadTestReportWithBLOBs();
         loadTestReport.setId(reportId);
         loadTestReport.setStatus(TestStatus.Error.name());
@@ -390,14 +392,15 @@ public class TestResultService {
         loadTestReport.setDescription(message);
         loadTestReportMapper.updateByPrimaryKeySelective(loadTestReport);
         // 查询 test_id
-        LoadTestReport testReportFromDB = loadTestReportMapper.selectByPrimaryKey(reportId);
         LoadTestWithBLOBs loadTest = new LoadTestWithBLOBs();
         loadTest.setId(testReportFromDB.getTestId());
         loadTest.setStatus(TestStatus.Error.name());
         loadTest.setDescription(message);
         loadTest.setUpdateTime(System.currentTimeMillis());
         loadTestMapper.updateByPrimaryKeySelective(loadTest);
-        // 发送报错消息到 kafka
-        loadTestProducer.sendMessage(testReportFromDB);
+        // 发送报错消息到 kafka, 数据库状态如果是error说明已经送过通知了， 通知只发一次
+        if (!StringUtils.equals(TestStatus.Error.name(), testReportFromDB.getStatus())) {
+            loadTestProducer.sendMessage(testReportFromDB);
+        }
     }
 }
