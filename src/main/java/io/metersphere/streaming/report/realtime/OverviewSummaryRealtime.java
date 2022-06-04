@@ -10,6 +10,7 @@ import io.metersphere.streaming.report.base.ChartsData;
 import io.metersphere.streaming.report.base.Errors;
 import io.metersphere.streaming.report.base.TestOverview;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -43,6 +44,8 @@ public class OverviewSummaryRealtime extends AbstractSummaryRealtime<TestOvervie
             try {
                 String reportValue = resultRealtime.getReportValue();
                 TestOverview reportContent = objectMapper.readValue(reportValue, TestOverview.class);
+                // 验证 overview 值的有效性
+                validate(reportContent);
                 sort.set(resultRealtime.getSort());
                 // 第一遍不需要汇总
                 if (result.get() == null) {
@@ -80,6 +83,18 @@ public class OverviewSummaryRealtime extends AbstractSummaryRealtime<TestOvervie
         testOverview.setErrors(handleErrors(reportId, resourceIndex));
 
         return testOverview;
+    }
+
+    private void validate(TestOverview reportContent) {
+        if (!NumberUtils.isCreatable(reportContent.getAvgBandwidth())) {
+            reportContent.setAvgBandwidth("0");
+        }
+        if (!NumberUtils.isCreatable(reportContent.getResponseTime90())) {
+            reportContent.setResponseTime90("0");
+        }
+        if (!NumberUtils.isCreatable(reportContent.getAvgResponseTime())) {
+            reportContent.setAvgResponseTime("0");
+        }
     }
 
     private String handleAvgBandwidth(String reportId, int resourceIndex) {
