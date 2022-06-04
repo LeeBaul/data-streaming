@@ -5,10 +5,10 @@ import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.base.Statistics;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -61,12 +61,12 @@ public class RequestStatisticsSummary extends AbstractSummary<List<Statistics>> 
         int count = selectPartAndDoSummary(reportId, getReportKey(), action);
         BigDecimal divisor = new BigDecimal(count);
         result.forEach(statistics -> {
-            statistics.setError(format.format(new BigDecimal(statistics.getFail()).divide(new BigDecimal(statistics.getSamples()), 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred)));
-            statistics.setAverage(format.format(new BigDecimal(statistics.getAverage()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setMedian(format.format(new BigDecimal(statistics.getMedian()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
+            statistics.setError(format.format(new BigDecimal(statistics.getFail()).divide(new BigDecimal(statistics.getSamples()), 4, RoundingMode.HALF_UP).multiply(oneHundred)));
+            statistics.setAverage(format.format(new BigDecimal(statistics.getAverage()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setMedian(format.format(new BigDecimal(statistics.getMedian()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, RoundingMode.HALF_UP)));
         });
 
         return result;

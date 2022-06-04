@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -78,16 +79,16 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
         //
 
         result.forEach(statistics -> {
-            statistics.setError(format.format(new BigDecimal(statistics.getFail()).divide(new BigDecimal(statistics.getSamples()), 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred)));
-            statistics.setAverage(format.format(new BigDecimal(statistics.getAverage()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setMedian(format.format(new BigDecimal(statistics.getMedian()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-            statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
+            statistics.setError(format.format(new BigDecimal(statistics.getFail()).divide(new BigDecimal(statistics.getSamples()), 4, RoundingMode.HALF_UP).multiply(oneHundred)));
+            statistics.setAverage(format.format(new BigDecimal(statistics.getAverage()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setMedian(format.format(new BigDecimal(statistics.getMedian()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, RoundingMode.HALF_UP)));
+            statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, RoundingMode.HALF_UP)));
             if (timeInfo.getDuration() > 0) {
-                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, BigDecimal.ROUND_HALF_UP)));
-                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, BigDecimal.ROUND_HALF_UP)));
-                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, BigDecimal.ROUND_HALF_UP)));
+                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
+                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
+                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
             }
         });
 

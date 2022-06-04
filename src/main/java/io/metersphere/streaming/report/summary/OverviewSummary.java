@@ -6,6 +6,7 @@ import io.metersphere.streaming.report.base.TestOverview;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,9 +54,9 @@ public class OverviewSummary extends AbstractSummary<TestOverview> {
         TestOverview testOverview = result.get();
 
 
-        testOverview.setErrors(format3.format(new BigDecimal(testOverview.getErrors()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-        testOverview.setResponseTime90(format3.format(new BigDecimal(testOverview.getResponseTime90()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
-        testOverview.setAvgResponseTime(format3.format(new BigDecimal(testOverview.getAvgResponseTime()).divide(divisor, 4, BigDecimal.ROUND_HALF_UP)));
+        testOverview.setErrors(format3.format(new BigDecimal(testOverview.getErrors()).divide(divisor, 4, RoundingMode.HALF_UP)));
+        testOverview.setResponseTime90(format3.format(new BigDecimal(testOverview.getResponseTime90()).divide(divisor, 4, RoundingMode.HALF_UP)));
+        testOverview.setAvgResponseTime(format3.format(new BigDecimal(testOverview.getAvgResponseTime()).divide(divisor, 4, RoundingMode.HALF_UP)));
 
         return testOverview;
     }

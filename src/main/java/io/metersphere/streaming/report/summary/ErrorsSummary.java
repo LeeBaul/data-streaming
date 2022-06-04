@@ -8,6 +8,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class ErrorsSummary extends AbstractSummary<List<Errors>> {
                     BigDecimal eSum = errorsList.stream().map(e -> new BigDecimal(e.getErrorNumber())).reduce(BigDecimal::add).get();
                     c.setErrorType(k);
                     c.setErrorNumber(eSum.toString());
-                    c.setPercentOfErrors(format.format(eSum.divide(errors, 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred)));
+                    c.setPercentOfErrors(format.format(eSum.divide(errors, 4, RoundingMode.HALF_UP).multiply(oneHundred)));
                     // 这个值有误差
                     c.setPercentOfAllSamples(percentOfAllSamples.toString());
                     return c;
@@ -72,7 +73,7 @@ public class ErrorsSummary extends AbstractSummary<List<Errors>> {
         int count = selectPartAndDoSummary(reportId, getReportKey(), action);
         result.forEach(e -> {
             // 这个值有误差
-            e.setPercentOfAllSamples(format.format(new BigDecimal(e.getPercentOfAllSamples()).divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP)));
+            e.setPercentOfAllSamples(format.format(new BigDecimal(e.getPercentOfAllSamples()).divide(new BigDecimal(count), 4, RoundingMode.HALF_UP)));
         });
         return result;
     }

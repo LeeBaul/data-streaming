@@ -16,6 +16,7 @@ import org.springframework.batch.item.ExecutionContext;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,11 +102,11 @@ public abstract class AbstractSummary<T> implements Summary<T> {
     protected void handleAvgChartData(List<ChartsData> result, int count) {
         result.forEach(d -> {
             if (d.getyAxis().compareTo(new BigDecimal(0)) > 0) {
-                d.setyAxis(d.getyAxis().divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP));
+                d.setyAxis(d.getyAxis().divide(new BigDecimal(count), 4, RoundingMode.HALF_UP));
             }
 
             if (d.getyAxis2().compareTo(new BigDecimal(0)) > 0) {
-                d.setyAxis2(d.getyAxis2().divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP));
+                d.setyAxis2(d.getyAxis2().divide(new BigDecimal(count), 4, RoundingMode.HALF_UP));
             }
         });
     }
