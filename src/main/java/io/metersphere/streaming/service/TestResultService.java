@@ -173,6 +173,7 @@ public class TestResultService {
         completeThreadPool.submit(() -> generateReportComplete(report.getId()));
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void completeReport(String reportId, int resourceIndex) {
         LoadTestReportWithBLOBs report = loadTestReportMapper.selectByPrimaryKey(reportId);
         if (report == null) {
