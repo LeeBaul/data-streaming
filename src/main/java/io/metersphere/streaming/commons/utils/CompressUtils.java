@@ -1,9 +1,10 @@
 package io.metersphere.streaming.commons.utils;
 
+import org.apache.commons.codec.binary.Base64;
+
 import java.io.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.*;
 
 public class CompressUtils {
 
@@ -149,5 +150,31 @@ public class CompressUtils {
         }
     }
 
+    public static Object zipString(Object data) {
+        if (!(data instanceof String)) {
+            return data;
+        }
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            try (DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(out)) {
+                deflaterOutputStream.write(((String) data).getBytes(StandardCharsets.UTF_8));
+            }
+            return Base64.encodeBase64String(out.toByteArray());
+        } catch (Exception e) {
+            return data;
+        }
+    }
 
+    public static Object unzipString(Object data) {
+        if (!(data instanceof String)) {
+            return data;
+        }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            try (OutputStream outputStream = new InflaterOutputStream(os)) {
+                outputStream.write(Base64.decodeBase64((String) data));
+            }
+            return os.toString(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return data;
+        }
+    }
 }
