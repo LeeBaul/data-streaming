@@ -174,15 +174,18 @@ public class TestResultService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void completeReport(String reportId, int resourceIndex) {
+    public void completeReport(String reportId) {
         LoadTestReportWithBLOBs report = loadTestReportMapper.selectByPrimaryKey(reportId);
         if (report == null) {
             LogUtil.info("Report is null.");
             return;
         }
-        LogUtil.info("等待所有的节点都结束 {}_{}", reportId, resourceIndex);
-        // 检查所有的节点状态, 结果为 true 表示所有的节点都结束了
-        if (!extLoadTestReportMapper.checkReportPartStatus(reportId)) {
+
+        // 更新complete count
+        extLoadTestReportResultMapper.updateReportCompleteCount(reportId);
+        int count = extLoadTestReportResultMapper.selectReportCompleteCount(reportId);
+        if (count > 0) { // count == 0 表示最后一个结束信息已经上传
+            LogUtil.info("等待其他节点结束: " + report.getTestId());
             return;
         }
 
