@@ -10,10 +10,11 @@
     </parent>
     <groupId>io.metersphere</groupId>
     <artifactId>data-streaming</artifactId>
-    <version>1.17</version>
+    <version>${revision}</version>
     <name>data-streaming</name>
 
     <properties>
+        <revision>2.0</revision>
         <java.version>11</java.version>
         <jmeter.version>5.4.3</jmeter.version>
     </properties>
