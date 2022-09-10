@@ -29,3 +29,6 @@ target/
 *.iml
 .DS_Store
 src/test/
+
+.mvn
+!.mvn/maven-wrapper.properties
