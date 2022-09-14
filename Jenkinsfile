@@ -63,7 +63,7 @@ pipeline {
             withCredentials([string(credentialsId: 'wechat-bot-webhook', variable: 'WEBHOOK')]) {
                 qyWechatNotification failNotify: true, mentionedId: '', mentionedMobile: '', webhookUrl: "$WEBHOOK"
             }
-            sh "mvn clean"
+            sh "./mvnw clean"
         }
     }
 }
