@@ -16,7 +16,8 @@ pipeline {
     triggers {
         pollSCM('0 * * * *')
     }
-    environment { 
+    environment {
+        JAVA_HOME = '/opt/jdk-11'
         IMAGE_NAME = 'data-streaming'
         IMAGE_PREFIX = 'registry.cn-qingdao.aliyuncs.com/metersphere'
     }
