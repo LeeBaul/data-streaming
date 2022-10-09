@@ -50,6 +50,7 @@ public class FileService {
         fileMetadata.setUpdateTime(System.currentTimeMillis());
         fileMetadata.setType("JTL");
         fileMetadata.setStorage("MINIO");
+        fileMetadata.setProjectId(projectId);
         if (fileMetadataMapper.updateByPrimaryKeySelective(fileMetadata) == 0) {
             fileMetadataMapper.insert(fileMetadata);
         }
