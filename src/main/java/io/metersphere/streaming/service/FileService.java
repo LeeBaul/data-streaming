@@ -48,7 +48,7 @@ public class FileService {
         fileMetadata.setSize(FileUtils.sizeOf(file));
         fileMetadata.setCreateTime(System.currentTimeMillis());
         fileMetadata.setUpdateTime(System.currentTimeMillis());
-        fileMetadata.setType("JTL");
+        fileMetadata.setType("ZIP");
         fileMetadata.setStorage("MINIO");
         fileMetadata.setProjectId(projectId);
         if (fileMetadataMapper.updateByPrimaryKeySelective(fileMetadata) == 0) {
