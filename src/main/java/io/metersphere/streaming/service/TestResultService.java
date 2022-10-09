@@ -205,7 +205,7 @@ public class TestResultService {
         LogUtil.info("测试[{}]结束, reportId: {}", report.getTestId(), reportId);
     }
 
-    private void saveJtlFile(String reportId) {
+    private void saveJtlFile(String projectId, String reportId) {
         LoadTestReportDetailExample example1 = new LoadTestReportDetailExample();
         example1.createCriteria().andReportIdEqualTo(reportId);
         if (loadTestReportDetailMapper.countByExample(example1) < 2) {
@@ -244,7 +244,7 @@ public class TestResultService {
             File file = new File(TEMP_DIRECTORY_PATH + File.separator + filename);
             File zipFile = new File(TEMP_DIRECTORY_PATH + File.separator + filename + ".zip");
             CompressUtils.zipFiles(file, zipFile); // 先进行压缩文件
-            FileMetadata fileMetadata = fileService.saveFile(zipFile, reportId);
+            FileMetadata fileMetadata = fileService.saveFile(zipFile, projectId, reportId);
             LoadTestReportWithBLOBs loadTestReportWithBLOBs = new LoadTestReportWithBLOBs();
             loadTestReportWithBLOBs.setFileId(fileMetadata.getId());
             loadTestReportWithBLOBs.setId(reportId);
@@ -295,7 +295,7 @@ public class TestResultService {
         // 强制执行一次生成报告
         generateReport(reportId);
         // 保存jtl
-        saveJtlFile(reportId);
+        saveJtlFile(loadTestReportNow.getProjectId(), reportId);
         // 标记结束
         testResultSaveService.saveReportCompletedStatus(reportId);
 

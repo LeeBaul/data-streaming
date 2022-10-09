@@ -1,6 +1,7 @@
 package io.metersphere.streaming;
 
 import io.metersphere.streaming.config.JmeterReportProperties;
+import io.metersphere.streaming.config.MinioProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration;
@@ -10,7 +11,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {QuartzAutoConfiguration.class})
 @EnableConfigurationProperties({
-        JmeterReportProperties.class
+        JmeterReportProperties.class,
+        MinioProperties.class
 })
 @PropertySource(value = {
         "classpath:/base.properties",
