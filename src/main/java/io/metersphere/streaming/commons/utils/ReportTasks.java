@@ -18,7 +18,7 @@ public class ReportTasks {
     }
 
     public static void clearTasks(String reportId) {
-        for (Future<?> task : getTasks(reportId)) {
+        for (Future<?> task : reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>())) {
             try {
                 if (!task.isDone()) {
                     task.cancel(true);
@@ -29,9 +29,5 @@ public class ReportTasks {
         }
         reportTasks.remove(reportId);
         LogUtil.info("清理任务: reportId: {}", reportId);
-    }
-
-    private static CopyOnWriteArraySet<Future<?>> getTasks(String reportId) {
-        return reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>());
     }
 }
