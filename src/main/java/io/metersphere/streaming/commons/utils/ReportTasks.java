@@ -20,7 +20,9 @@ public class ReportTasks {
     public static void clearTasks(String reportId) {
         for (Future<?> task : getTasks(reportId)) {
             try {
-                task.cancel(true);
+                if (!task.isDone()) {
+                    task.cancel(true);
+                }
             } catch (Exception e) {
                 LogUtil.error("取消任务失败: ", e);
             }
