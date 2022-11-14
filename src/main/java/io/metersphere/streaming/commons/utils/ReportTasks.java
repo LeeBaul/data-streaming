@@ -1,11 +1,22 @@
 package io.metersphere.streaming.commons.utils;
 
+import io.metersphere.streaming.base.domain.LoadTestReportWithBLOBs;
+import io.metersphere.streaming.base.mapper.LoadTestReportMapper;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Future;
 
+@Service
 public class ReportTasks {
     private static final ConcurrentHashMap<String, CopyOnWriteArraySet<Future<?>>> reportTasks = new ConcurrentHashMap<>();
+    @Resource
+    private LoadTestReportMapper loadTestReportMapper;
+    private boolean isRunning = true;
 
     public static void addTask(String reportId, Future<?> future) {
         CopyOnWriteArraySet<Future<?>> tasks = reportTasks.get(reportId);
@@ -30,5 +41,32 @@ public class ReportTasks {
         }
         reportTasks.remove(reportId);
         LogUtil.info("清理任务: reportId: {}", reportId);
+    }
+
+    @PostConstruct
+    public void init() {
+        new Thread(() -> {
+            while (isRunning) {
+                try {
+                    Thread.sleep(1000 * 60 * 5);
+                    reportTasks.forEach((reportId, futures) -> {
+                        LoadTestReportWithBLOBs report = loadTestReportMapper.selectByPrimaryKey(reportId);
+                        if (report != null && report.getStatus().equals("Completed")) {
+                            clearTasks(reportId);
+                        }
+                        LogUtil.info("定时清理遗留任务: reportId: {}", reportId);
+                    });
+                } catch (InterruptedException e) {
+                    LogUtil.error("任务监控线程异常: ", e);
+                } catch (Exception e) {
+                    LogUtil.error("handle queue error: ", e);
+                }
+            }
+        }).start();
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        isRunning = false;
     }
 }
