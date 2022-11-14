@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.metersphere.streaming.base.domain.LoadTestReportResultPart;
 import io.metersphere.streaming.base.domain.LoadTestReportResultRealtime;
 import io.metersphere.streaming.commons.utils.LogUtil;
+import io.metersphere.streaming.commons.utils.ReportTasks;
 import io.metersphere.streaming.model.ReportResult;
 import io.metersphere.streaming.service.TestResultSaveService;
 import io.metersphere.streaming.service.TestResultService;
@@ -30,7 +31,7 @@ public class ReportConsumer {
 
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 20,
             0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
+            ReportTasks.getTaskQueue());
 
     private final ThreadPoolExecutor saveExecutor = new ThreadPoolExecutor(30, 30,
             0L, TimeUnit.MILLISECONDS,
@@ -49,6 +50,8 @@ public class ReportConsumer {
         if (BooleanUtils.toBoolean(reportResult.getCompleted())) {
             // 最后汇总所有的信息
             Runnable task = getCompletedTask(content, reportId, resourceIndex);
+            // 清理未处理的任务
+            ReportTasks.clearTasks(reportId);
             executor.submit(task);
             return;
         }
@@ -56,6 +59,9 @@ public class ReportConsumer {
         LogUtil.info("处理报告: reportId_resourceIndex: {}", key);
         Runnable task = getRealtimeTask(content, reportId, resourceIndex);
         executor.submit(task);
+
+        // 保存每个报告的任务队列
+        ReportTasks.addTask(reportId, task);
     }
 
     private Runnable getRealtimeTask(List<ReportResult> content, String reportId, Integer resourceIndex) {
