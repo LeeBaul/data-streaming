@@ -18,7 +18,8 @@ public class ReportTasks {
     }
 
     public static void clearTasks(String reportId) {
-        for (Future<?> task : reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>())) {
+        CopyOnWriteArraySet<Future<?>> futures = reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>());
+        for (Future<?> task : futures) {
             try {
                 if (!task.isDone()) {
                     task.cancel(true);
