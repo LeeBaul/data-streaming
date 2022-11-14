@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Future;
@@ -49,13 +50,20 @@ public class ReportTasks {
             while (isRunning) {
                 try {
                     Thread.sleep(1000 * 60 * 5);
-                    reportTasks.forEach((reportId, futures) -> {
+                    Iterator<String> keys = reportTasks.keys().asIterator();
+                    while (keys.hasNext()) {
+                        String reportId = keys.next();
                         LoadTestReportWithBLOBs report = loadTestReportMapper.selectByPrimaryKey(reportId);
-                        if (report != null && report.getStatus().equals("Completed")) {
+                        if (report == null) {
                             clearTasks(reportId);
+                            LogUtil.info("定时清理遗留任务, 报告已删除: reportId: {}", reportId);
+                            return;
                         }
-                        LogUtil.info("定时清理遗留任务: reportId: {}", reportId);
-                    });
+                        if (report.getStatus().equals("Completed")) {
+                            clearTasks(reportId);
+                            LogUtil.info("定时清理遗留任务, 报告已结束: reportId: {}", reportId);
+                        }
+                    }
                 } catch (InterruptedException e) {
                     LogUtil.error("任务监控线程异常: ", e);
                 } catch (Exception e) {
