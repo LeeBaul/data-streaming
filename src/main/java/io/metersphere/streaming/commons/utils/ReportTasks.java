@@ -2,33 +2,34 @@ package io.metersphere.streaming.commons.utils;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Future;
 
 public class ReportTasks {
-    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<Runnable>> reportTasks = new ConcurrentHashMap<>();
-    private static final LinkedBlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<>();
+    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<Future<?>>> reportTasks = new ConcurrentHashMap<>();
 
-    public static void addTask(String reportId, Runnable task) {
-        CopyOnWriteArraySet<Runnable> tasks = reportTasks.get(reportId);
+    public static void addTask(String reportId, Future<?> future) {
+        CopyOnWriteArraySet<Future<?>> tasks = reportTasks.get(reportId);
         if (tasks == null) {
             tasks = new CopyOnWriteArraySet<>();
             reportTasks.put(reportId, tasks);
         }
-        tasks.add(task);
+        tasks.add(future);
         LogUtil.info("添加任务: reportId: {}, taskSize: {}", reportId, tasks.size());
     }
 
     public static void clearTasks(String reportId) {
-        taskQueue.removeAll(getTasks(reportId));
+        for (Future<?> task : getTasks(reportId)) {
+            try {
+                task.cancel(true);
+            } catch (Exception e) {
+                LogUtil.error("取消任务失败: ", e);
+            }
+        }
         reportTasks.remove(reportId);
         LogUtil.info("清理任务: reportId: {}", reportId);
     }
 
-    private static CopyOnWriteArraySet<Runnable> getTasks(String reportId) {
+    private static CopyOnWriteArraySet<Future<?>> getTasks(String reportId) {
         return reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>());
-    }
-
-    public static LinkedBlockingQueue<Runnable> getTaskQueue() {
-        return taskQueue;
     }
 }

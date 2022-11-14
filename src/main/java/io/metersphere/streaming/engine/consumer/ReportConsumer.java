@@ -31,7 +31,7 @@ public class ReportConsumer {
 
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 20,
             0L, TimeUnit.MILLISECONDS,
-            ReportTasks.getTaskQueue());
+            new LinkedBlockingQueue<>());
 
     private final ThreadPoolExecutor saveExecutor = new ThreadPoolExecutor(30, 30,
             0L, TimeUnit.MILLISECONDS,
@@ -57,11 +57,10 @@ public class ReportConsumer {
         }
         String key = reportId + "_" + resourceIndex;
         LogUtil.info("处理报告: reportId_resourceIndex: {}", key);
-        Runnable task = getRealtimeTask(content, reportId, resourceIndex);
-        executor.submit(task);
-
         // 保存每个报告的任务队列
-        ReportTasks.addTask(reportId, task);
+        Runnable task = getRealtimeTask(content, reportId, resourceIndex);
+        Future<?> future = executor.submit(task);
+        ReportTasks.addTask(reportId, future);
     }
 
     private Runnable getRealtimeTask(List<ReportResult> content, String reportId, Integer resourceIndex) {
