@@ -51,7 +51,7 @@ public class ReportConsumer {
             // 最后汇总所有的信息
             Runnable task = getCompletedTask(content, reportId, resourceIndex);
             // 清理未处理的任务
-            ReportTasks.clearTasks(reportId);
+            ReportTasks.clearUnExecuteTasks(reportId);
             executor.submit(task);
             return;
         }

@@ -21,7 +21,7 @@ public class LoadTestConsumer {
     public void consume(ConsumerRecord<?, String> record) throws Exception {
         try {
             LoadTestReport loadTestReport = objectMapper.readValue(record.value(), LoadTestReport.class);
-            ReportTasks.clearTasks(loadTestReport.getId());
+            ReportTasks.clearUnExecuteTasks(loadTestReport.getId());
         } catch (Exception e) {
             LogUtil.error("测试结束删除本地待处理队列失败: ", e);
         }

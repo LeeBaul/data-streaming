@@ -25,11 +25,14 @@ public class ReportTasks {
             tasks = new CopyOnWriteArraySet<>();
             reportTasks.put(reportId, tasks);
         }
+        // 清理已结束的
+        clearDoneTasks(reportId);
+        // 添加
         tasks.add(future);
         LogUtil.info("添加任务: reportId: {}, taskSize: {}", reportId, tasks.size());
     }
 
-    public static void clearTasks(String reportId) {
+    public static void clearUnExecuteTasks(String reportId) {
         CopyOnWriteArraySet<Future<?>> futures = reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>());
         for (Future<?> task : futures) {
             try {
@@ -44,6 +47,11 @@ public class ReportTasks {
         LogUtil.info("清理任务: reportId: {}", reportId);
     }
 
+    private static void clearDoneTasks(String reportId) {
+        CopyOnWriteArraySet<Future<?>> futures = reportTasks.getOrDefault(reportId, new CopyOnWriteArraySet<>());
+        futures.removeIf(Future::isDone);
+    }
+
     @PostConstruct
     public void init() {
         new Thread(() -> {
@@ -55,12 +63,12 @@ public class ReportTasks {
                         String reportId = keys.next();
                         LoadTestReportWithBLOBs report = loadTestReportMapper.selectByPrimaryKey(reportId);
                         if (report == null) {
-                            clearTasks(reportId);
+                            clearUnExecuteTasks(reportId);
                             LogUtil.info("定时清理遗留任务, 报告已删除: reportId: {}", reportId);
                             return;
                         }
                         if (report.getStatus().equals("Completed")) {
-                            clearTasks(reportId);
+                            clearUnExecuteTasks(reportId);
                             LogUtil.info("定时清理遗留任务, 报告已结束: reportId: {}", reportId);
                         }
                     }
