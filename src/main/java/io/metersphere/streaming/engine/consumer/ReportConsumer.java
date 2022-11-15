@@ -61,6 +61,7 @@ public class ReportConsumer {
         Runnable task = getRealtimeTask(content, reportId, resourceIndex);
         Future<?> future = executor.submit(task);
         ReportTasks.addTask(reportId, future);
+        LogUtil.info("当前待处理队列 size: {}", executor.getQueue().size());
     }
 
     private Runnable getRealtimeTask(List<ReportResult> content, String reportId, Integer resourceIndex) {
