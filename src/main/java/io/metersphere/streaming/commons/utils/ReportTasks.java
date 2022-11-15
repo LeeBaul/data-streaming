@@ -34,7 +34,7 @@ public class ReportTasks {
         for (Future<?> task : futures) {
             try {
                 if (!task.isDone()) {
-                    task.cancel(true);
+                    task.cancel(false);
                 }
             } catch (Exception e) {
                 LogUtil.error("取消任务失败: ", e);
