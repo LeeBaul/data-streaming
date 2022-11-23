@@ -1,5 +1,6 @@
 package io.metersphere.streaming.report.realtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.metersphere.streaming.base.domain.LoadTestReportResultPart;
 import io.metersphere.streaming.base.domain.LoadTestReportResultPartKey;
@@ -37,16 +38,31 @@ public class OverviewSummaryRealtime extends AbstractSummaryRealtime<TestOvervie
     }
 
     @Override
-    public TestOverview execute(String reportId, int resourceIndex) {
+    public TestOverview execute(String reportId, int resourceIndex, int sort) {
+
+        LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
+        key.setReportId(reportId);
+        key.setReportKey(getReportKey());
+        key.setResourceIndex(resourceIndex);
+        LoadTestReportResultPart loadTestReportResultPart = loadTestReportResultPartMapper.selectByPrimaryKey(key);
+
         AtomicReference<TestOverview> result = new AtomicReference<>();
-        AtomicInteger sort = new AtomicInteger(1);
+        if (loadTestReportResultPart != null) {
+            TestOverview testOverview = null;
+            try {
+                testOverview = objectMapper.readValue(loadTestReportResultPart.getReportValue(), TestOverview.class);
+            } catch (JsonProcessingException e) {
+                LogUtil.error(e);
+            }
+            result.set(testOverview);
+        }
+
         SummaryRealtimeAction action = (resultRealtime) -> {
             try {
                 String reportValue = resultRealtime.getReportValue();
                 TestOverview reportContent = objectMapper.readValue(reportValue, TestOverview.class);
                 // 验证 overview 值的有效性
                 validate(reportContent);
-                sort.set(resultRealtime.getSort());
                 // 第一遍不需要汇总
                 if (result.get() == null) {
                     result.set(reportContent);
@@ -69,9 +85,9 @@ public class OverviewSummaryRealtime extends AbstractSummaryRealtime<TestOvervie
                 LogUtil.error("OverviewSummaryRealtime:", e);
             }
         };
-        selectRealtimeAndDoSummary(reportId, resourceIndex, getReportKey(), action);
+        selectRealtimeAndDoSummary(reportId, resourceIndex, sort, getReportKey(), action);
 
-        BigDecimal divisor = new BigDecimal(sort.get());
+        BigDecimal divisor = new BigDecimal(2);
         TestOverview testOverview = result.get();
 
         testOverview.setResponseTime90(format3.format(new BigDecimal(testOverview.getResponseTime90()).divide(divisor, 4, RoundingMode.HALF_UP)));

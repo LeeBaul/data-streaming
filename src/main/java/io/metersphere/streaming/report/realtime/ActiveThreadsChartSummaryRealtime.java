@@ -15,8 +15,8 @@ public class ActiveThreadsChartSummaryRealtime extends AbstractSummaryRealtime<L
     }
 
     @Override
-    public List<ChartsData> execute(String reportId, int resourceIndex) {
-        return handleMaxAction(reportId, resourceIndex);
+    public List<ChartsData> execute(String reportId, int resourceIndex, int sort) {
+        return handleMaxAction(reportId, resourceIndex, sort);
     }
 
 }

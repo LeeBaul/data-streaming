@@ -391,7 +391,7 @@ public class ResultDataParse {
         if (clazz == null || args == null) {
             throw new IllegalArgumentException();
         }
-        T t = clazz.newInstance();
+        T t = clazz.getDeclaredConstructor().newInstance();
         Field[] fields = clazz.getDeclaredFields();
         if (fields.length > args.length) {
             throw new IndexOutOfBoundsException();

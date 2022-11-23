@@ -41,13 +41,12 @@ public interface ExtLoadTestReportMapper {
     List<LoadTestReportResultPart> fetchTestReportParts(@Param("reportId") String reportId, @Param("reportKey") String reportKey);
 
     @Select(value = {
-            "SELECT report_id AS reportId, report_key AS reportKey, resource_index AS resourceIndex, report_value AS reportValue, sort",
+            "SELECT report_id AS reportId, report_key AS reportKey, resource_index AS resourceIndex, report_value AS reportValue, sort ",
             "FROM load_test_report_result_realtime ",
-            "WHERE report_id = #{reportId} AND report_key = #{reportKey} AND resource_index = #{resourceIndex} ",
-            "ORDER BY sort "
+            "WHERE report_id = #{reportId} AND report_key = #{reportKey} AND resource_index = #{resourceIndex} AND sort = #{sort} "
     })
-    @Options(fetchSize = Integer.MIN_VALUE, resultSetType = ResultSetType.FORWARD_ONLY)
-    List<LoadTestReportResultRealtime> fetchTestReportRealtime(@Param("reportId") String reportId,
-                                                               @Param("reportKey") String reportKey,
-                                                               @Param("resourceIndex") String resourceIndex);
+    LoadTestReportResultRealtime fetchTestReportRealtime(@Param("reportId") String reportId,
+                                                         @Param("reportKey") String reportKey,
+                                                         @Param("resourceIndex") int resourceIndex,
+                                                         @Param("sort") int sort);
 }

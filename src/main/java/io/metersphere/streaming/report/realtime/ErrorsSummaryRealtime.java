@@ -1,6 +1,9 @@
 package io.metersphere.streaming.report.realtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPart;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPartKey;
 import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.base.Errors;
@@ -25,26 +28,41 @@ public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>>
     }
 
     @Override
-    public List<Errors> execute(String reportId, int resourceIndex) {
+    public List<Errors> execute(String reportId, int resourceIndex, int sort) {
+
+        LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
+        key.setReportId(reportId);
+        key.setReportKey(getReportKey());
+        key.setResourceIndex(resourceIndex);
+        LoadTestReportResultPart loadTestReportResultPart = loadTestReportResultPartMapper.selectByPrimaryKey(key);
+
         List<Errors> result = new ArrayList<>();
-        AtomicInteger sort = new AtomicInteger();
+        if (loadTestReportResultPart != null) {
+            try {
+                result = objectMapper.readValue(loadTestReportResultPart.getReportValue(), new TypeReference<List<Errors>>() {
+                });
+            } catch (JsonProcessingException e) {
+                LogUtil.error(e);
+            }
+        }
+
+        List<Errors> finalResult = result;
         SummaryRealtimeAction action = (resultPart) -> {
             try {
                 String reportValue = resultPart.getReportValue();
-                sort.set(resultPart.getSort());
                 List<Errors> reportContent = objectMapper.readValue(reportValue, new TypeReference<List<Errors>>() {
                 });
                 // 第一遍不需要汇总
-                if (CollectionUtils.isEmpty(result)) {
-                    result.addAll(reportContent);
+                if (CollectionUtils.isEmpty(finalResult)) {
+                    finalResult.addAll(reportContent);
                     return;
                 }
                 // 第二遍以后
-                result.addAll(reportContent);
+                finalResult.addAll(reportContent);
 
-                BigDecimal errors = result.stream().map(e -> new BigDecimal(e.getErrorNumber())).reduce(BigDecimal::add).get();
+                BigDecimal errors = finalResult.stream().map(e -> new BigDecimal(e.getErrorNumber())).reduce(BigDecimal::add).get();
 
-                Map<String, List<Errors>> collect = result.stream().collect(Collectors.groupingBy(Errors::getErrorType));
+                Map<String, List<Errors>> collect = finalResult.stream().collect(Collectors.groupingBy(Errors::getErrorType));
 
                 List<Errors> summaryDataList = collect.keySet().stream().map(k -> {
 
@@ -65,19 +83,19 @@ public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>>
                     return c;
                 }).collect(Collectors.toList());
                 // 清空
-                result.clear();
+                finalResult.clear();
                 // 保留前几次的结果
-                result.addAll(summaryDataList);
+                finalResult.addAll(summaryDataList);
                 // 返回
             } catch (Exception e) {
                 LogUtil.error("ErrorsSummaryRealtime: ", e);
             }
         };
-        selectRealtimeAndDoSummary(reportId, resourceIndex, getReportKey(), action);
+        selectRealtimeAndDoSummary(reportId, resourceIndex, sort, getReportKey(), action);
         result.forEach(e -> {
             // 这个值有误差
-            e.setPercentOfAllSamples(format.format(new BigDecimal(e.getPercentOfAllSamples()).divide(new BigDecimal(sort.get()), 4, RoundingMode.HALF_UP)));
+            e.setPercentOfAllSamples(format.format(new BigDecimal(e.getPercentOfAllSamples()).divide(new BigDecimal(sort), 4, RoundingMode.HALF_UP)));
         });
-        return result;
+        return finalResult;
     }
 }

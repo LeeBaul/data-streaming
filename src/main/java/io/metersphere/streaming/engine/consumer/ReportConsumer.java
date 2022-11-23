@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class ReportConsumer {
@@ -47,6 +48,7 @@ public class ReportConsumer {
         ReportResult reportResult = content.get(0);
         String reportId = reportResult.getReportId();
         int resourceIndex = reportResult.getResourceIndex();
+        Integer sort = reportResult.getSort();
         if (BooleanUtils.toBoolean(reportResult.getCompleted())) {
             // 最后汇总所有的信息
             Runnable task = getCompletedTask(content, reportId, resourceIndex);
@@ -58,13 +60,13 @@ public class ReportConsumer {
         String key = reportId + "_" + resourceIndex;
         LogUtil.info("处理报告: reportId_resourceIndex: {}", key);
         // 保存每个报告的任务队列
-        Runnable task = getRealtimeTask(content, reportId, resourceIndex);
+        Runnable task = getRealtimeTask(content, reportId, resourceIndex, sort);
         Future<?> future = executor.submit(task);
         ReportTasks.addTask(reportId, future);
         LogUtil.info("当前处理中的任务: {}, 待处理队列: {}", executor.getActiveCount(), executor.getQueue().size());
     }
 
-    private Runnable getRealtimeTask(List<ReportResult> content, String reportId, Integer resourceIndex) {
+    private Runnable getRealtimeTask(List<ReportResult> content, String reportId, int resourceIndex, int sort) {
         return () -> {
             boolean b = testResultSaveService.checkReportStatus(reportId);
             if (!b) {
@@ -85,7 +87,7 @@ public class ReportConsumer {
                     testResult.setReportId(result.getReportId());
                     testResult.setReportKey(reportKey);
                     testResult.setResourceIndex(result.getResourceIndex());
-                    testResult.setSort(result.getSort());
+                    testResult.setSort(sort);
                     testResult.setReportValue(objectMapper.writeValueAsString(result.getContent()));
                     testResultSaveService.saveResultRealtime(testResult);
                     LogUtil.debug("报告: " + reportId + ", 保存" + reportKey + "耗时: " + (System.currentTimeMillis() - summaryStart));
@@ -100,7 +102,7 @@ public class ReportConsumer {
                 long summaryStart = System.currentTimeMillis();
                 LogUtil.debug("报告: " + reportId + ", 保存耗时: " + (summaryStart - start));
                 // 汇总信息
-                testResultSaveService.saveAllSummaryRealtime(reportId, resourceIndex, reportKeys);
+                testResultSaveService.saveAllSummaryRealtime(reportId, resourceIndex, sort, reportKeys);
                 LogUtil.debug("报告: " + reportId + ", 汇总耗时: " + (System.currentTimeMillis() - summaryStart));
             } catch (InterruptedException e) {
                 LogUtil.error(e);

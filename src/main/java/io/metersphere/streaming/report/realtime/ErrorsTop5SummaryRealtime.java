@@ -1,6 +1,9 @@
 package io.metersphere.streaming.report.realtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPart;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPartKey;
 import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.base.ErrorsTop5;
@@ -24,25 +27,41 @@ public class ErrorsTop5SummaryRealtime extends AbstractSummaryRealtime<List<Erro
     }
 
     @Override
-    public List<ErrorsTop5> execute(String reportId, int resourceIndex) {
+    public List<ErrorsTop5> execute(String reportId, int resourceIndex, int sort) {
+        LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
+        key.setReportId(reportId);
+        key.setReportKey(getReportKey());
+        key.setResourceIndex(resourceIndex);
+        LoadTestReportResultPart loadTestReportResultPart = loadTestReportResultPartMapper.selectByPrimaryKey(key);
+
         List<ErrorsTop5> result = new ArrayList<>();
+        if (loadTestReportResultPart != null) {
+            try {
+                result = objectMapper.readValue(loadTestReportResultPart.getReportValue(), new TypeReference<List<ErrorsTop5>>() {
+                });
+            } catch (JsonProcessingException e) {
+                LogUtil.error(e);
+            }
+        }
+
         Map<String, List<ErrorCount>> sampleErrorCounts = new HashMap<>();
 
 
+        List<ErrorsTop5> finalResult = result;
         SummaryRealtimeAction action = (resultPart) -> {
             try {
                 String reportValue = resultPart.getReportValue();
                 List<ErrorsTop5> reportContent = objectMapper.readValue(reportValue, new TypeReference<List<ErrorsTop5>>() {
                 });
                 // 第一遍不需要汇总
-                if (CollectionUtils.isEmpty(result)) {
-                    result.addAll(reportContent);
+                if (CollectionUtils.isEmpty(finalResult)) {
+                    finalResult.addAll(reportContent);
                     return;
                 }
                 // 第二遍以后
-                result.addAll(reportContent);
+                finalResult.addAll(reportContent);
 
-                Map<String, List<ErrorsTop5>> collect = result.stream().collect(Collectors.groupingBy(ErrorsTop5::getSample));
+                Map<String, List<ErrorsTop5>> collect = finalResult.stream().collect(Collectors.groupingBy(ErrorsTop5::getSample));
                 List<ErrorsTop5> summaryDataList = collect.keySet().stream().map(sample -> {
                     sampleErrorCounts.put(sample, new ArrayList<>());
                     List<ErrorCount> errorCounts = sampleErrorCounts.get(sample);
@@ -109,16 +128,16 @@ public class ErrorsTop5SummaryRealtime extends AbstractSummaryRealtime<List<Erro
                     return c;
                 }).collect(Collectors.toList());
                 // 清空
-                result.clear();
+                finalResult.clear();
                 // 保留前几次的结果
-                result.addAll(summaryDataList);
+                finalResult.addAll(summaryDataList);
                 // 返回
             } catch (Exception e) {
                 LogUtil.error("ErrorsTop5SummaryRealtime: ", e);
             }
         };
-        selectRealtimeAndDoSummary(reportId, resourceIndex, getReportKey(), action);
-        return result;
+        selectRealtimeAndDoSummary(reportId, resourceIndex, sort, getReportKey(), action);
+        return finalResult;
     }
 
     @AllArgsConstructor

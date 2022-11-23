@@ -195,12 +195,12 @@ public class TestResultSaveService {
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void saveAllSummaryRealtime(String reportId, Integer resourceIndex, List<String> reportKeys) {
+    public void saveAllSummaryRealtime(String reportId, int resourceIndex, int sort, List<String> reportKeys) {
         CountDownLatch countDownLatch = new CountDownLatch(reportKeys.size());
         for (String key : reportKeys) {
             threadPoolExecutor.execute(() -> {
                 try {
-                    saveSummaryRealtime(reportId, key, resourceIndex);
+                    saveSummaryRealtime(reportId, key, resourceIndex, sort);
                 } catch (Exception e) {
                     LogUtil.error("reportId: " + reportId + ", key:" + key, e);
                 } finally {
@@ -216,9 +216,9 @@ public class TestResultSaveService {
         }
     }
 
-    public void saveSummaryRealtime(String reportId, String reportKey, Integer resourceIndex) {
+    public void saveSummaryRealtime(String reportId, String reportKey, int resourceIndex, int sort) {
         try {
-            Object summary = SummaryRealtimeFactory.getSummaryExecutor(reportKey).execute(reportId, resourceIndex);
+            Object summary = SummaryRealtimeFactory.getSummaryExecutor(reportKey).execute(reportId, resourceIndex, sort);
             LoadTestReportResultPart record = new LoadTestReportResultPart();
             record.setReportId(reportId);
             record.setReportKey(reportKey);

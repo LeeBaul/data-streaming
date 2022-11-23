@@ -15,8 +15,8 @@ public class ErrorsChartSummaryRealtime extends AbstractSummaryRealtime<List<Cha
     }
 
     @Override
-    public List<ChartsData> execute(String reportId, int resourceIndex) {
-        return handleSumAction(reportId, resourceIndex);
+    public List<ChartsData> execute(String reportId, int resourceIndex, int sort) {
+        return handleSumAction(reportId, resourceIndex, sort);
     }
 
 

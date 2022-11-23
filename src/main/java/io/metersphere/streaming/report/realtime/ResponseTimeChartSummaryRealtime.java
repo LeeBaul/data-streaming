@@ -15,7 +15,7 @@ public class ResponseTimeChartSummaryRealtime extends AbstractSummaryRealtime<Li
     }
 
     @Override
-    public List<ChartsData> execute(String reportId, int resourceIndex) {
-        return handleAvgAction(reportId, resourceIndex);
+    public List<ChartsData> execute(String reportId, int resourceIndex, int sort) {
+        return handleAvgAction(reportId, resourceIndex, sort);
     }
 }

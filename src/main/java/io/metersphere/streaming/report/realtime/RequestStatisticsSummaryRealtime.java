@@ -1,6 +1,11 @@
 package io.metersphere.streaming.report.realtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPart;
+import io.metersphere.streaming.base.domain.LoadTestReportResultPartKey;
+import io.metersphere.streaming.base.domain.LoadTestReportResultRealtime;
+import io.metersphere.streaming.base.domain.LoadTestReportResultRealtimeKey;
 import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.CommonBeanFactory;
 import io.metersphere.streaming.commons.utils.LogUtil;
@@ -16,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component("requestStatisticsSummaryRealtime")
@@ -29,74 +33,123 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
     }
 
     @Override
-    public List<Statistics> execute(String reportId, int resourceIndex) {
-        ReportTimeInfo timeInfo = CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex);
-        Map<Integer, Long> realtimeSumDurations = timeInfo.getRealtimeSumDurations();
+    public List<Statistics> execute(String reportId, int resourceIndex, int sort) {
+        LoadTestReportResultPartKey testReportResultPartKey = new LoadTestReportResultPartKey();
+        testReportResultPartKey.setReportId(reportId);
+        testReportResultPartKey.setReportKey(ReportKeys.TimeInfo.name());
+        testReportResultPartKey.setResourceIndex(resourceIndex);
+        LoadTestReportResultPart timeInfoPart = loadTestReportResultPartMapper.selectByPrimaryKey(testReportResultPartKey);
+        ReportTimeInfo timeInfo;
+        if (timeInfoPart != null) {
+            try {
+                timeInfo = objectMapper.readValue(timeInfoPart.getReportValue(), ReportTimeInfo.class);
+            } catch (JsonProcessingException e) {
+                LogUtil.error(e);
+                timeInfo = CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort);
+            }
+        } else {
+            timeInfo = CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort);
+        }
+
+        LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
+        key.setReportId(reportId);
+        key.setReportKey(getReportKey());
+        key.setResourceIndex(resourceIndex);
+        LoadTestReportResultPart loadTestReportResultPart = loadTestReportResultPartMapper.selectByPrimaryKey(key);
 
         List<Statistics> result = new ArrayList<>();
-        AtomicInteger sort = new AtomicInteger(1);
+        if (loadTestReportResultPart != null) {
+            try {
+                result = objectMapper.readValue(loadTestReportResultPart.getReportValue(), new TypeReference<List<Statistics>>() {
+                });
+            } catch (JsonProcessingException e) {
+                LogUtil.error(e);
+            }
+        }
+        List<Statistics> finalResult = result;
+        ReportTimeInfo finalTimeInfo = timeInfo;
+
+        LoadTestReportResultRealtimeKey reportResultRealtimeKey = new LoadTestReportResultRealtimeKey();
+        reportResultRealtimeKey.setReportId(reportId);
+        reportResultRealtimeKey.setReportKey(ReportKeys.TimeInfo.name());
+        reportResultRealtimeKey.setResourceIndex(resourceIndex);
+        reportResultRealtimeKey.setSort(sort);
+        LoadTestReportResultRealtime reportResultRealtime = loadTestReportResultRealtimeMapper.selectByPrimaryKey(reportResultRealtimeKey);
+        ReportTimeInfo reportTimeInfo = null;
+        try {
+            reportTimeInfo = objectMapper.readValue(reportResultRealtime.getReportValue(), ReportTimeInfo.class);
+        } catch (JsonProcessingException e) {
+            LogUtil.error(e);
+        }
+
+        ReportTimeInfo finalReportTimeInfo = reportTimeInfo;
         SummaryRealtimeAction action = (resultPart) -> {
             try {
                 String reportValue = resultPart.getReportValue();
-                sort.set(resultPart.getSort());
                 List<Statistics> reportContent = objectMapper.readValue(reportValue, new TypeReference<List<Statistics>>() {
                 });
-
                 reportContent.forEach(statistics -> {
-                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(realtimeSumDurations.get(resultPart.getSort())))));
-                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(realtimeSumDurations.get(resultPart.getSort())))));
-                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(realtimeSumDurations.get(resultPart.getSort())))));
+                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(finalReportTimeInfo.getDuration()))));
+                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(finalReportTimeInfo.getDuration()))));
+                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(finalReportTimeInfo.getDuration()))));
                 });
 
                 // 保存顺序
                 List<String> orderList = reportContent.stream().map(Statistics::getLabel).collect(Collectors.toList());
                 // 第一遍不需要汇总
-                if (CollectionUtils.isEmpty(result)) {
-                    result.addAll(reportContent);
+                if (CollectionUtils.isEmpty(finalResult)) {
+                    finalResult.addAll(reportContent);
                     return;
                 }
-                // 第二遍以后
-                result.addAll(reportContent);
 
-                Map<String, List<Statistics>> collect = result.stream().collect(Collectors.groupingBy(Statistics::getLabel));
+                finalResult.forEach(statistics -> {
+                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
+                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
+                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
+                });
+
+                // 第二遍以后
+                finalResult.addAll(reportContent);
+
+                Map<String, List<Statistics>> collect = finalResult.stream().collect(Collectors.groupingBy(Statistics::getLabel));
                 List<Statistics> summaryDataList = collect.keySet().stream().map(k -> {
 
                     List<Statistics> errorsList = collect.get(k);
                     return getStatistics(k, errorsList);
                 }).collect(Collectors.toList());
                 // 清空
-                result.clear();
+                finalResult.clear();
                 // 保留前几次的结果
-                result.addAll(summaryDataList);
+                finalResult.addAll(summaryDataList);
                 // 按照原始顺序重新排序
-                result.sort(Comparator.comparingInt(a -> orderList.indexOf(a.getLabel())));
+                finalResult.sort(Comparator.comparingInt(a -> orderList.indexOf(a.getLabel())));
             } catch (Exception e) {
                 LogUtil.error("RequestStatisticsSummaryRealtime: ", e);
             }
         };
-        selectRealtimeAndDoSummary(reportId, resourceIndex, getReportKey(), action);
-        BigDecimal divisor = new BigDecimal(sort.get());
+        selectRealtimeAndDoSummary(reportId, resourceIndex, sort, getReportKey(), action);
+        BigDecimal divisor = new BigDecimal(2);
         //
 
-        result.forEach(statistics -> {
+        finalResult.forEach(statistics -> {
             statistics.setError(format.format(new BigDecimal(statistics.getFail()).divide(new BigDecimal(statistics.getSamples()), 4, RoundingMode.HALF_UP).multiply(oneHundred)));
             statistics.setAverage(format.format(new BigDecimal(statistics.getAverage()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setMedian(format.format(new BigDecimal(statistics.getMedian()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, RoundingMode.HALF_UP)));
-            if (timeInfo.getDuration() > 0) {
-                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
-                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
-                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(timeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
+            if (finalTimeInfo.getDuration() > 0) {
+                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + finalReportTimeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
+                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + finalReportTimeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
+                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + finalReportTimeInfo.getDuration()), 4, RoundingMode.HALF_UP)));
             }
         });
 
         // 把 total 放到最后
-        List<Statistics> total = result.stream().filter(r -> StringUtils.equalsAnyIgnoreCase(r.getLabel(), "Total")).collect(Collectors.toList());
-        result.removeAll(total);
-        result.addAll(total);
-        return result;
+        List<Statistics> total = finalResult.stream().filter(r -> StringUtils.equalsAnyIgnoreCase(r.getLabel(), "Total")).collect(Collectors.toList());
+        finalResult.removeAll(total);
+        finalResult.addAll(total);
+        return finalResult;
     }
 
     private Statistics getStatistics(String k, List<Statistics> statisticsList) {
