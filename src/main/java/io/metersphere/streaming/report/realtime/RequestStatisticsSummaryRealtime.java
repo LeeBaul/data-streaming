@@ -17,12 +17,12 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Component("requestStatisticsSummaryRealtime")
@@ -41,16 +41,16 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
         testReportResultPartKey.setReportKey(ReportKeys.TimeInfo.name());
         testReportResultPartKey.setResourceIndex(resourceIndex);
         LoadTestReportResultPart timeInfoPart = loadTestReportResultPartMapper.selectByPrimaryKey(testReportResultPartKey);
-        ReportTimeInfo timeInfo;
+        AtomicReference<ReportTimeInfo> timeInfo = new AtomicReference<>();
         if (timeInfoPart != null) {
             try {
-                timeInfo = objectMapper.readValue(timeInfoPart.getReportValue(), ReportTimeInfo.class);
+                timeInfo.set(objectMapper.readValue(timeInfoPart.getReportValue(), ReportTimeInfo.class));
             } catch (JsonProcessingException e) {
                 LogUtil.error(e);
-                timeInfo = CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort);
+                timeInfo.set(CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort));
             }
         } else {
-            timeInfo = CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort);
+            timeInfo.set(CommonBeanFactory.getBean(TimeInfoSummaryRealtime.class).execute(reportId, resourceIndex, sort));
         }
 
         LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
@@ -69,7 +69,6 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
             }
         }
         List<Statistics> finalResult = result;
-        ReportTimeInfo finalTimeInfo = timeInfo;
         AtomicLong realtimeInfo = new AtomicLong(0);
         SummaryRealtimeAction action = (resultPart) -> {
             try {
@@ -101,9 +100,9 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
                 }
 
                 finalResult.forEach(statistics -> {
-                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
-                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
-                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(finalTimeInfo.getDuration()))));
+                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
+                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
+                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
                 });
 
                 // 第二遍以后
@@ -136,10 +135,10 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
             statistics.setTp90(format.format(new BigDecimal(statistics.getTp90()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setTp95(format.format(new BigDecimal(statistics.getTp95()).divide(divisor, 4, RoundingMode.HALF_UP)));
             statistics.setTp99(format.format(new BigDecimal(statistics.getTp99()).divide(divisor, 4, RoundingMode.HALF_UP)));
-            if (finalTimeInfo.getDuration() > 0) {
-                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
-                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
-                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(finalTimeInfo.getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
+            if (timeInfo.get().getDuration() > 0) {
+                statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).divide(BigDecimal.valueOf(timeInfo.get().getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
+                statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).divide(BigDecimal.valueOf(timeInfo.get().getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
+                statistics.setSent(format.format(new BigDecimal(statistics.getSent()).divide(BigDecimal.valueOf(timeInfo.get().getDuration() + realtimeInfo.get()), 4, RoundingMode.HALF_UP)));
             }
         });
 
