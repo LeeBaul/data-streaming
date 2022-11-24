@@ -86,9 +86,11 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
                 realtimeInfo.set(reportTimeInfo.getDuration());
 
                 reportContent.forEach(statistics -> {
-                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
-                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
-                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
+                    if (realtimeInfo.get() > 0) {
+                        statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
+                        statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
+                        statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(realtimeInfo.get()))));
+                    }
                 });
 
                 // 保存顺序
@@ -100,9 +102,12 @@ public class RequestStatisticsSummaryRealtime extends AbstractSummaryRealtime<Li
                 }
 
                 finalResult.forEach(statistics -> {
-                    statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
-                    statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
-                    statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(timeInfo.get().getDuration()))));
+                    long duration = timeInfo.get().getDuration();
+                    if (duration > 0) {
+                        statistics.setTransactions(format.format(new BigDecimal(statistics.getTransactions()).multiply(BigDecimal.valueOf(duration))));
+                        statistics.setReceived(format.format(new BigDecimal(statistics.getReceived()).multiply(BigDecimal.valueOf(duration))));
+                        statistics.setSent(format.format(new BigDecimal(statistics.getSent()).multiply(BigDecimal.valueOf(duration))));
+                    }
                 });
 
                 // 第二遍以后
