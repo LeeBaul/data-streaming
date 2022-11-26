@@ -57,7 +57,7 @@ public class TimeInfoSummaryRealtime extends AbstractSummaryRealtime<ReportTimeI
                 if (reportContent.getEndTime() > reportTimeInfo.getEndTime()) {
                     reportTimeInfo.setEndTime(reportContent.getEndTime());
                 }
-                long seconds = Duration.between(Instant.ofEpochMilli(reportTimeInfo.getStartTime()), Instant.ofEpochMilli((reportTimeInfo.getEndTime()))).getSeconds();
+                long seconds = Duration.between(Instant.ofEpochSecond(reportTimeInfo.getStartTime() / 1000), Instant.ofEpochSecond((reportTimeInfo.getEndTime() / 1000))).getSeconds();
 
                 reportTimeInfo.setDuration(seconds);
                 result.set(reportTimeInfo);

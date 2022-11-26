@@ -35,7 +35,7 @@ public class TimeInfoReport extends AbstractReport {
         long startTimeStamp = ((Double) beginDateResult.getValue()).longValue();
         long endTimeStamp = ((Double) endDateResult.getValue()).longValue();
 
-        long seconds = Duration.between(Instant.ofEpochMilli(startTimeStamp), Instant.ofEpochMilli(endTimeStamp)).getSeconds();
+        long seconds = Duration.between(Instant.ofEpochSecond(startTimeStamp / 1000), Instant.ofEpochSecond(endTimeStamp / 1000)).getSeconds();
         ReportTimeInfo reportTimeInfo = new ReportTimeInfo();
         reportTimeInfo.setStartTime(startTimeStamp);
         reportTimeInfo.setEndTime(endTimeStamp);
