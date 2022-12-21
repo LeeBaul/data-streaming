@@ -5,16 +5,12 @@
     <parent>
         <groupId>io.metersphere</groupId>
         <artifactId>metersphere</artifactId>
-        <version>main</version>
+        <version>spring-boot-3.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <artifactId>data-streaming</artifactId>
     <version>${revision}</version>
     <name>data-streaming</name>
-
-    <properties>
-        <java.version>11</java.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -119,6 +115,20 @@
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
             <version>${minio.version}</version>
+        </dependency>
+
+        <!-- http2 配置-->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-alpn-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-alpn-conscrypt-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.http2</groupId>
+            <artifactId>http2-server</artifactId>
         </dependency>
     </dependencies>
 

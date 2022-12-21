@@ -4,7 +4,7 @@ import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.model.Metric;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;

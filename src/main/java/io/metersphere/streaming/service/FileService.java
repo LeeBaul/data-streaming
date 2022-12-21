@@ -10,7 +10,7 @@ import io.minio.PutObjectArgs;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;

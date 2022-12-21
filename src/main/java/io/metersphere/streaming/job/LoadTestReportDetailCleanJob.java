@@ -9,7 +9,7 @@ import io.metersphere.streaming.base.mapper.LoadTestReportMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 import static io.metersphere.streaming.commons.constants.TestStatus.Completed;
