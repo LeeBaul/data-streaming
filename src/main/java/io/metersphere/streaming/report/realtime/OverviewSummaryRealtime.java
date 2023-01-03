@@ -8,7 +8,7 @@ import io.metersphere.streaming.base.mapper.LoadTestReportResultPartMapper;
 import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.base.ChartsData;
-import io.metersphere.streaming.report.base.Errors;
+import io.metersphere.streaming.report.base.Statistics;
 import io.metersphere.streaming.report.base.TestOverview;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -21,7 +21,6 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -174,15 +173,19 @@ public class OverviewSummaryRealtime extends AbstractSummaryRealtime<TestOvervie
         LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
         key.setReportId(reportId);
         key.setResourceIndex(resourceIndex);
-        key.setReportKey(ReportKeys.Errors.name());
-        LoadTestReportResultPart loadTestReportResultPart = loadTestReportResultPartMapper.selectByPrimaryKey(key);
+        key.setReportKey(ReportKeys.RequestStatistics.name());
+        LoadTestReportResultPart requestStatistics = loadTestReportResultPartMapper.selectByPrimaryKey(key);
         try {
-            if (loadTestReportResultPart == null) {
+            if (requestStatistics == null) {
                 return "0";
             }
-            List<Errors> errorsList = objectMapper.readValue(loadTestReportResultPart.getReportValue(), new TypeReference<List<Errors>>() {
+
+            List<Statistics> statisticsList = objectMapper.readValue(requestStatistics.getReportValue(), new TypeReference<List<Statistics>>() {
             });
-            double eSum = errorsList.stream().mapToDouble(e -> Double.parseDouble(e.getPercentOfAllSamples())).sum();
+            double eSum = statisticsList.stream()
+                    .filter(e -> StringUtils.equals("Total", e.getLabel()))
+                    .mapToDouble(e -> Double.parseDouble(e.getError()))
+                    .sum();
             return format3.format(eSum);
         } catch (Exception e) {
             LogUtil.error(e.getMessage(), e);

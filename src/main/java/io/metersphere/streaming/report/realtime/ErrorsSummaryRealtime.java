@@ -7,20 +7,23 @@ import io.metersphere.streaming.base.domain.LoadTestReportResultPartKey;
 import io.metersphere.streaming.commons.constants.ReportKeys;
 import io.metersphere.streaming.commons.utils.LogUtil;
 import io.metersphere.streaming.report.base.Errors;
+import io.metersphere.streaming.report.base.Statistics;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component("errorsSummaryRealtime")
 public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>> {
     private final BigDecimal oneHundred = new BigDecimal(100);
+    private final DecimalFormat format3 = new DecimalFormat("0.000");
 
     @Override
     public String getReportKey() {
@@ -67,19 +70,13 @@ public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>>
                 List<Errors> summaryDataList = collect.keySet().stream().map(k -> {
 
                     List<Errors> errorsList = collect.get(k);
-                    BigDecimal percentOfAllSamples = errorsList.stream()
-                            .map(e -> new BigDecimal(e.getPercentOfAllSamples()))
-                            .reduce(BigDecimal::add)
-                            .get();
-
 
                     Errors c = new Errors();
                     BigDecimal eSum = errorsList.stream().map(e -> new BigDecimal(e.getErrorNumber())).reduce(BigDecimal::add).get();
                     c.setErrorType(k);
                     c.setErrorNumber(eSum.toString());
                     c.setPercentOfErrors(format.format(eSum.divide(errors, 4, RoundingMode.HALF_UP).multiply(oneHundred)));
-                    // 这个值有误差
-                    c.setPercentOfAllSamples(percentOfAllSamples.toString());
+
                     return c;
                 }).collect(Collectors.toList());
                 // 清空
@@ -92,10 +89,35 @@ public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>>
             }
         };
         selectRealtimeAndDoSummary(reportId, resourceIndex, sort, getReportKey(), action);
-        result.forEach(e -> {
-            // 这个值有误差
-            e.setPercentOfAllSamples(format.format(new BigDecimal(e.getPercentOfAllSamples()).divide(new BigDecimal(sort), 4, RoundingMode.HALF_UP)));
-        });
+        // 处理错误率
+        handleErrors(reportId, resourceIndex, finalResult);
         return finalResult;
     }
+
+    private void handleErrors(String reportId, int resourceIndex, List<Errors> errors) {
+        LoadTestReportResultPartKey key = new LoadTestReportResultPartKey();
+        key.setReportId(reportId);
+        key.setResourceIndex(resourceIndex);
+        key.setReportKey(ReportKeys.RequestStatistics.name());
+        LoadTestReportResultPart requestStatistics = loadTestReportResultPartMapper.selectByPrimaryKey(key);
+        try {
+            if (requestStatistics == null) {
+                return;
+            }
+            List<Statistics> statisticsList = objectMapper.readValue(requestStatistics.getReportValue(), new TypeReference<List<Statistics>>() {
+            });
+            BigDecimal allSamples = statisticsList.stream()
+                    .filter(e -> StringUtils.equals("Total", e.getLabel()))
+                    .map(e -> new BigDecimal(e.getSamples()))
+                    .reduce(BigDecimal::add)
+                    .get();
+            errors.forEach(e -> {
+                e.setPercentOfAllSamples(format.format(new BigDecimal(e.getErrorNumber()).divide(allSamples, 4, RoundingMode.HALF_UP).multiply(oneHundred)));
+                System.out.println(allSamples + ", " + e.getErrorNumber());
+            });
+        } catch (Exception e) {
+            LogUtil.error(e.getMessage(), e);
+        }
+    }
+
 }
