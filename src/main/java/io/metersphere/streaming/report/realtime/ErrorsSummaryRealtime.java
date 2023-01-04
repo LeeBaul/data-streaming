@@ -113,7 +113,6 @@ public class ErrorsSummaryRealtime extends AbstractSummaryRealtime<List<Errors>>
                     .get();
             errors.forEach(e -> {
                 e.setPercentOfAllSamples(format.format(new BigDecimal(e.getErrorNumber()).divide(allSamples, 4, RoundingMode.HALF_UP).multiply(oneHundred)));
-                System.out.println(allSamples + ", " + e.getErrorNumber());
             });
         } catch (Exception e) {
             LogUtil.error(e.getMessage(), e);
