@@ -17,7 +17,7 @@ public class LoadTestConsumer {
     @Resource
     private ObjectMapper objectMapper;
 
-    @KafkaListener(id = CONSUME_ID, topics = "${kafka.test.topic}", groupId = CONSUME_ID + "_" + "#{T(java.util.UUID).randomUUID()}")
+    @KafkaListener(id = CONSUME_ID, topics = "${kafka.test.topic}", groupId = CONSUME_ID + "_" + "${random.uuid}")
     public void consume(ConsumerRecord<?, String> record) throws Exception {
         try {
             LoadTestReport loadTestReport = objectMapper.readValue(record.value(), LoadTestReport.class);
